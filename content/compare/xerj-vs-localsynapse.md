@@ -1,0 +1,146 @@
+---
+title: "XERJ vs LocalSynapse for MCP local file search"
+h1: "What's a local MCP search engine for Claude?"
+description: "Two local MCP search engines. LocalSynapse wins the desktop experience and mail shapes beyond mbox and eml. XERJ wins data files, Excel sheets read as typed tables, and the Elasticsearch REST API."
+slug: "xerj-vs-localsynapse"
+cluster: "Comparison: local MCP search"
+question: "What's a local MCP search engine for Claude?"
+intent: "comparison"
+published: "2026-08-22"
+updated: "2026-10-23"
+author: "XERJ documentation team"
+reviewer: "XERJ engineering team"
+schema_type: "TechArticle"
+structured_data: [faq]
+agent_prompt: "Act as a coding agent. Read https://xerj.org/llms.txt, start a local node with `xerj --insecure --data-dir ./xerj-data`, run `xerj autoindex ./work --prefix work --state-dir ./state-work` on one chosen folder rather than a whole drive, attach it with `xerj mcp --url http://127.0.0.1:9200`, then answer the user question with an Elasticsearch DSL query and report every file the run refused together with the reason it gave."
+answer: "What's a local MCP search engine for Claude? Two candidates: LocalSynapse wins the desktop experience, whole-drive indexing and mail shapes beyond mbox and eml. XERJ wins data files, Excel sheets read as typed tables, and the Elasticsearch query surface. No head-to-head was run for this comparison."
+key_fact: "LocalSynapse released v2.21.0 on 2026-10-16; its GitHub repository hosts release artifacts and had 10 stars."
+key_fact_source: "https://github.com/LocalSynapse/LocalSynapse"
+key_fact_date: "2026-10-19"
+intent_group: "Find the right tool"
+queries:
+  - "mcp server search local files"
+  - "local search engine for AI agents MCP server BM25"
+commands:
+  - cmd: "xerj --insecure --data-dir ./xerj-data"
+    note: "Start one node. There is no desktop window and no installer step."
+  - cmd: "xerj autoindex ./work --prefix work --state-dir ./state-work"
+    note: "One folder at a time, chosen by you, rather than a whole drive."
+  - cmd: "xerj mcp --url http://127.0.0.1:9200"
+    note: "Attach the running node over stdio MCP. Same binary, 22 tools, no desktop window."
+links_out:
+  - "give-chatgpt-claude-local-file-access"
+  - "code-search-mcp-for-claude-code"
+  - "set-mcp-memory-storage-path"
+  - "search-file-contents-in-a-folder"
+evidence:
+  - claim: "LocalSynapse is a local search product for files and mail on Windows that combines full-text BM25 with a local embedder, and the same binary is both a desktop search window and an MCP server."
+    source: "https://github.com/LocalSynapse/LocalSynapse"
+  - claim: "LocalSynapse runs on Windows and macOS, indexes whole drives automatically and skips cloud placeholder files from OneDrive and Dropbox."
+    source: "https://localsynapse.com/en"
+  - claim: "The LocalSynapse embedder is BGE-M3 running through ONNX Runtime on the CPU, and its search index is stored in a local SQLite database."
+    source: "https://localsynapse.com/en/blog/mcp-local-file-search"
+  - claim: "The LocalSynapse MCP server communicates over stdio, opens no network port, and exposes search_files, get_file_content, list_indexed_files and get_pipeline_status."
+    source: "https://localsynapse.com/en/mcp"
+  - claim: "LocalSynapse reads PDF, Word, PowerPoint, Hangul, CSV, Markdown and plain text, plus .eml, .msg and .mbox mail, and reads Excel workbooks with cell coordinates and merged ranges up to 25 MB."
+    source: "https://github.com/LocalSynapse/LocalSynapse"
+  - claim: "LocalSynapse is licensed Apache-2.0, but its repository states that it hosts release artifacts only and that the source tree is no longer published from version 2.15.0 onward."
+    source: "https://github.com/LocalSynapse/LocalSynapse"
+faq:
+  - q: "What does LocalSynapse do better?"
+    a: "The desktop experience. It ships a search window, indexes whole drives automatically, and keeps Excel cell coordinates and merged ranges, which XERJ does not. On mail the two overlap — XERJ reads mbox and eml — while LocalSynapse also reads .msg."
+  - q: "LocalSynapse vs something that also indexes CSV and SQLite?"
+    a: "That is the split. XERJ takes the data files and the query surface: SQLite databases, hostile CSV dialects, SQL exports and code, answered over the Elasticsearch REST API."
+  - q: "Can XERJ read my mail archive?"
+    a: "Partly, since v1.0.0-rc.75. XERJ reads .mbox and .eml, detecting mbox by content — a From-separator plus RFC 5322 headers — so the extension is irrelevant. PST, OST and Maildir are still unhandled. LocalSynapse reads .eml, .msg and .mbox."
+  - q: "Can XERJ read a spreadsheet?"
+    a: "Yes, since v1.0.0-rc.81. Each .xlsx sheet becomes its own dataset with one record per row and typed fields, and a .pptx deck becomes one record per slide. A sheet is read as one table, merged cells are not expanded, and legacy .xls must be saved as .xlsx first."
+  - q: "How many MCP tools does each side expose?"
+    a: "LocalSynapse documents four. XERJ serves 17 through xerj mcp, including memory tools."
+  - q: "Is either one open source?"
+    a: "XERJ is Apache-2.0 with published source. LocalSynapse is Apache-2.0 but its repository says the source tree is no longer published from version 2.15.0."
+  - q: "Is there a measured comparison on this page?"
+    a: "No head-to-head was run. No LocalSynapse build was installed, so there is no shared corpus, no timing and no recall figure here."
+  - q: "How do I let an agent search files on my machine offline?"
+    a: "Give it a local MCP server over an index of those files. Both sides here run on your machine, they index different things, and an agent can hold a tool list from each."
+---
+
+**TL;DR** — LocalSynapse wins the desktop experience: a search window you double-click, whole-drive indexing, and mail shapes beyond mbox and eml that XERJ has no extractor for. XERJ wins data files — Excel sheets included, read as typed tables — and the Elasticsearch query surface. No head-to-head was run for this page.
+
+## Concede the desktop
+
+LocalSynapse is a product a person installs and opens. The same binary is a search window and an MCP server, and its site states that it runs on Windows and macOS.
+
+It indexes whole drives automatically and skips cloud placeholder files from OneDrive and Dropbox, so nothing has to be added folder by folder. That is the Windows habit of an instant file finder, carried into a tool an agent can also call.
+
+XERJ has none of that. There is no window, no installer with a tray icon, and no drive-wide default. You name a folder and run a command.
+
+## Concede the formats we do not have
+
+LocalSynapse reads PDF, Word, PowerPoint, Hangul, CSV, Markdown and plain text. It also reads mail files as `.eml`, `.msg` and `.mbox`, and it reads Excel workbooks with cell coordinates and merged ranges up to 25 MB.
+
+Office files are no longer a gap on the XERJ side. Since v1.0.0-rc.81 it reads `.pptx` decks one document per slide ([#1117](https://github.com/xerj-org/xerj/pull/1117)) and `.xlsx` workbooks one dataset per sheet ([#1124](https://github.com/xerj-org/xerj/pull/1124)). The two read a workbook differently: XERJ turns a sheet into a typed table under its header row, while LocalSynapse keeps cell coordinates and merged ranges. XERJ reads one table per sheet. It does not expand merged cells, so a workbook built around its layout suits LocalSynapse better. Mail is no longer a flat gap — XERJ reads .mbox and .eml, detecting mbox by content rather than by extension ([#949](https://github.com/xerj-org/xerj/pull/949), shipped in v1.0.0-rc.75) — but PST, OST and Maildir are still unhandled, and LocalSynapse adds .msg.
+
+If your corpus is mail in a shape XERJ does not parse, stop here and use LocalSynapse. No measurement on this page would change that answer.
+
+## What XERJ reads instead
+
+The list holds JSON and JSONL, CSV with dialect detection, structured logs, SQL exports, SQLite and Excel workbooks. It also holds PDF, DOCX, PowerPoint, HTML, XML, YAML, plain text, mail, code and gzip variants.
+
+The data end of that list is where the two products part company. A SQLite database, a semicolon CSV with a decimal comma, and a multi-gigabyte SQL export are shapes a document-first indexer usually skips.
+
+Code is the other one. Each code document carries a `defs` field and a `symbols` list with names, kinds and line numbers, across 36 languages.
+
+## Two different answers to "how does the agent ask?"
+
+LocalSynapse documents an MCP server over stdio that opens no network port, with four tools: `search_files`, `get_file_content`, `list_indexed_files` and `get_pipeline_status`. That is a clean, small surface, and for many agents it is enough.
+
+XERJ answers over the Elasticsearch REST API. An agent writes the query DSL it already knows: `match_phrase`, `terms`, `range`, aggregations and `_source` narrowing.
+
+`xerj mcp` serves 22 tools over stdio on top of that, and `/_memory/{ns}` gives an agent namespaced memory in the engine.
+
+Pick the surface that matches your caller. A small tool list is easier for a simple agent, and a query language is more useful for one that asks precise questions.
+
+## Retrieval, stated honestly on both sides
+
+LocalSynapse combines full-text BM25 with a local embedder, BGE-M3 running through ONNX Runtime on the CPU. It stores its index in a local SQLite database.
+
+XERJ ranks with BM25 and can fuse a vector clause with Reciprocal Rank Fusion or a weighted linear sum. The difference is the default: the XERJ default embedder is lexical feature hashing rather than neural, so the shipped default carries no meaning-based signal. Neural embeddings are opt-in through `--embed-mode neural`, and they are CPU-only.
+
+On a paraphrased question, a product that ships a neural embedder by default has the advantage. That was not measured here, and the mechanism is enough to say it.
+
+## Licenses and what you can read
+
+XERJ is Apache-2.0 and its source is published. LocalSynapse is also Apache-2.0, but its repository states that it hosts release artifacts only, and that the source tree is no longer published from version 2.15.0 onward.
+
+If reading the code matters to you, that difference is the whole decision. If it does not, it changes nothing.
+
+## The limits you inherit with XERJ
+
+XERJ is single-node only. There is no data-plane replication and no failover, so one host is the whole deployment.
+
+The server retains heap for every document it indexes, which is an open tracked defect. Whole-drive indexing is exactly the shape that grows it, which is one reason XERJ asks for a folder instead.
+
+XERJ does no optical character recognition. A page image with no text layer stays junk until a separate tool gives it a text layer.
+
+## When to choose LocalSynapse instead
+
+Choose LocalSynapse when a person wants a search window on Windows or macOS. That is its job.
+
+Choose LocalSynapse for mail XERJ does not parse, or for workbooks that depend on layout. XERJ reads .mbox and .eml, but not PST, OST or Maildir. It reads a sheet as one table and does not expand merged cells.
+
+Choose LocalSynapse when you want whole-drive coverage with no folder list to maintain. Its neural embedder is on by default.
+
+## When to choose XERJ instead
+
+Choose XERJ when the corpus holds data rather than documents. SQLite, CSV dialects, SQL exports and source code are the reason.
+
+Choose XERJ when the caller writes Elasticsearch query DSL, or needs aggregations rather than a ranked file list.
+
+Choose XERJ when agent memory belongs in the same process as the index. Choose it when you want to read the source of what you run.
+
+## What was not measured
+
+No head-to-head was run for this page. No LocalSynapse build was installed here, so there is no shared corpus, no timing, no recall figure and no tool-by-tool score.
+
+Every LocalSynapse fact above comes from its own site or repository. Read those before you decide, because a product that ships binaries moves faster than a page about it.

