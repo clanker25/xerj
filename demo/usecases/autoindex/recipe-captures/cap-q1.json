@@ -1,0 +1,27 @@
+{
+    "_shards": {
+        "failed": 0,
+        "skipped": 0,
+        "successful": 2,
+        "total": 2
+    },
+    "aggregations": {
+        "temp": {
+            "avg": 56.57737499999999,
+            "count": 900,
+            "max": 98.0,
+            "min": 15.2,
+            "sum": 45261.899999999994
+        }
+    },
+    "hits": {
+        "hits": [],
+        "max_score": null,
+        "total": {
+            "relation": "eq",
+            "value": 800
+        }
+    },
+    "timed_out": false,
+    "took": 2
+}
