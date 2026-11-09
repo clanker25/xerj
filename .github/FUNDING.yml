@@ -1,0 +1,6 @@
+# Funding links shown on the repository's "Sponsor" button.
+# The project takes donations at https://xerj.org/donate (USDT, TRC20):
+# they buy rented GPU hours for training the XERJ Query-1 model.
+# Add a platform (e.g. github: [xerj-org]) only when that account exists.
+
+custom: ["https://xerj.org/donate"]

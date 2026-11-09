@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "include": [
+    "/get",
+    "/get.ps1",
+    "/lead",
+    "/get.sh",
+    "/api/field-report"
+  ],
+  "exclude": []
+}
